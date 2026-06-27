@@ -122,7 +122,6 @@
             100% { background: #fafcff; border-left-color: #cbd5e1; }
         }
 
-        /* ТОСТ-УВЕДОМЛЕНИЯ */
         .toast-container {
             position: fixed;
             top: 20px;
@@ -174,7 +173,6 @@
             .toast-container { top: 10px; right: 10px; left: 10px; max-width: none; }
         }
 
-        /* ФОТО-ВЬЮЕР */
         .photo-viewer-overlay {
             position: fixed;
             top: 0;
@@ -224,7 +222,6 @@
         .photo-viewer-close:hover { background: rgba(255,255,255,0.3); }
         .photo-viewer-close:active { transform: scale(0.9); }
 
-        /* СТАТУС СИНХРОНИЗАЦИИ */
         .sync-status {
             display: flex;
             align-items: center;
@@ -238,13 +235,60 @@
         .sync-status .offline { color: #dc3545; }
         .sync-status .syncing { color: #f59e0b; animation: pulse 1s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* СТИЛИ ДЛЯ ТИПОВ ПРЕДМЕТОВ */
+        .type-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: #fafcff;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border: 1px solid #eef2f7;
+        }
+        .type-item .prefix {
+            font-weight: 700;
+            color: #0b1b32;
+            min-width: 50px;
+            font-size: 14px;
+        }
+        .type-item .name {
+            flex: 1;
+            color: #4f617c;
+            font-size: 14px;
+        }
+        .type-item .btn { padding: 6px 12px; font-size: 12px; }
+        .type-edit-input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1.5px solid #d0d8e3;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 80px;
+        }
+        .add-type-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .add-type-row input {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px 14px;
+            border: 1.5px solid #d0d8e3;
+            border-radius: 12px;
+            font-size: 14px;
+            margin: 0;
+        }
+        .add-type-row .btn { flex-shrink: 0; }
     </style>
 </head>
 <body>
 <div id="app">
     <h1>📦 Инвентарь <small>Cloud</small></h1>
 
-    <!-- ИНДИКАТОР СИНХРОНИЗАЦИИ -->
     <div class="flex" style="margin-bottom:12px;">
         <div class="sync-status" id="syncStatus">
             <span class="offline">⏸ Офлайн</span>
@@ -252,13 +296,13 @@
         <span style="margin-left:auto; font-size:12px; color:#6b7a8f;">Данные в облаке ☁️</span>
     </div>
 
-    <!-- ВКЛАДКИ -->
     <div class="tabs">
         <button class="tab-btn active" data-tab="dashboard">📊 Дашборд</button>
         <button class="tab-btn" data-tab="list">📋 Список</button>
         <button class="tab-btn" data-tab="problems">🔧 Проблемы <span class="count" id="problemsCount">0</span></button>
         <button class="tab-btn" data-tab="scan">📸 Сканер</button>
         <button class="tab-btn" data-tab="settings">⚙️ Настройки</button>
+        <button class="tab-btn" data-tab="types">🏷️ Типы</button>
     </div>
 
     <!-- DASHBOARD -->
@@ -350,14 +394,8 @@
                     <button class="btn btn-primary" id="scanAddBtn" style="flex:0.7;">➕</button>
                 </div>
             </div>
-            <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap;">
-                <button class="btn btn-sm btn-outline" data-quick="ST-001">Стол</button>
-                <button class="btn btn-sm btn-outline" data-quick="CH-002">Стул</button>
-                <button class="btn btn-sm btn-outline" data-quick="PC-003">Системник</button>
-                <button class="btn btn-sm btn-outline" data-quick="MN-004">Монитор</button>
-                <button class="btn btn-sm btn-outline" data-quick="KB-005">Клавиатура</button>
-                <button class="btn btn-sm btn-outline" data-quick="MS-006">Мышь</button>
-                <button class="btn btn-sm btn-outline" data-quick="EXT-007">Удлинитель</button>
+            <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap;" id="quickButtons">
+                <!-- Быстрые кнопки генерируются из типов -->
             </div>
         </div>
     </div>
@@ -385,7 +423,32 @@
         </div>
     </div>
 
-    <!-- MODAL (problem report) -->
+    <!-- TYPES -->
+    <div id="tab-types" class="tab-content">
+        <div class="card">
+            <h3 style="margin-bottom:12px;">🏷️ Типы предметов и префиксы для QR</h3>
+            <p style="color:#4f617c; font-size:14px; margin-bottom:16px;">
+                Добавляйте новые типы предметов. Префикс в QR-коде будет автоматически определять тип предмета.
+            </p>
+            
+            <div style="font-weight:600; margin-bottom:8px;">Существующие типы:</div>
+            <div id="typesContainer"></div>
+            
+            <div style="margin-top:16px; border-top: 1px solid #eef2f7; padding-top:16px;">
+                <div style="font-weight:600; margin-bottom:8px;">➕ Добавить новый тип:</div>
+                <div class="add-type-row">
+                    <input type="text" id="newTypePrefix" placeholder="Префикс (например: PR)" style="max-width:120px;">
+                    <input type="text" id="newTypeName" placeholder="Название типа (например: Принтер)">
+                    <button class="btn btn-success" id="addTypeBtn">➕ Добавить</button>
+                </div>
+                <div style="font-size:12px; color:#8a9aa8; margin-top:6px;">
+                    💡 Префикс должен быть уникальным и состоять из 2-4 букв/цифр
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
     <div id="problemModal" class="modal-overlay" style="display:none;">
         <div class="modal">
             <button class="close" id="modalCloseBtn">&times;</button>
@@ -412,7 +475,6 @@
         </div>
     </div>
     
-    <!-- MODAL (edit location) -->
     <div id="locationModal" class="modal-overlay" style="display:none;">
         <div class="modal">
             <button class="close" id="locationModalClose">&times;</button>
@@ -429,7 +491,6 @@
         </div>
     </div>
 
-    <!-- PHOTO VIEWER -->
     <div id="photoViewer" class="photo-viewer-overlay" onclick="closePhotoViewer()">
         <button class="photo-viewer-close" onclick="closePhotoViewer()">✕</button>
         <img class="photo-viewer" id="photoViewerImage" src="" alt="Фото повреждения">
@@ -438,7 +499,7 @@
 
 <script>
 // ============================================================
-// 🔑 КОНФИГУРАЦИЯ FIREBASE (ВАШИ ДАННЫЕ)
+// 🔑 КОНФИГУРАЦИЯ FIREBASE
 // ============================================================
 const firebaseConfig = {
     apiKey: "AIzaSyB86RogkP-40QiA6fp-syGz00fZxg7ieg8",
@@ -450,9 +511,6 @@ const firebaseConfig = {
     appId: "1:807653991150:web:2cf0644e2c95e435cb89ff"
 };
 
-// ============================================================
-// ИНИЦИАЛИЗАЦИЯ FIREBASE
-// ============================================================
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
@@ -529,6 +587,7 @@ document.addEventListener('keydown', function(e) {
 // ============================================================
 let items = [];
 let history = [];
+let itemTypes = {};
 let settings = {
     floors: ['1', '2', '3', '4', '5'],
     clusters: [
@@ -552,6 +611,116 @@ let problemsUrgencyFilter = 'all';
 let isDataLoaded = false;
 
 // ============================================================
+// УПРАВЛЕНИЕ ТИПАМИ ПРЕДМЕТОВ
+// ============================================================
+const TYPES_KEY = 'item_types';
+
+function loadTypes() {
+    try {
+        const saved = localStorage.getItem(TYPES_KEY);
+        if (saved) {
+            itemTypes = JSON.parse(saved);
+        } else {
+            setDefaultTypes();
+        }
+    } catch(e) {
+        setDefaultTypes();
+    }
+}
+
+function setDefaultTypes() {
+    itemTypes = {
+        'ST': 'Стол',
+        'CH': 'Стул',
+        'PC': 'Системный блок',
+        'MN': 'Монитор',
+        'KB': 'Клавиатура',
+        'MS': 'Мышь',
+        'EXT': 'Удлинитель'
+    };
+    saveTypes();
+}
+
+function saveTypes() {
+    localStorage.setItem(TYPES_KEY, JSON.stringify(itemTypes));
+}
+
+function getTypeByPrefix(prefix) {
+    if (!prefix) return 'Предмет';
+    // Ищем точное совпадение префикса
+    for (const [key, value] of Object.entries(itemTypes)) {
+        if (prefix.toUpperCase().startsWith(key.toUpperCase())) {
+            return value;
+        }
+    }
+    return 'Предмет';
+}
+
+function renderTypes() {
+    const container = document.getElementById('typesContainer');
+    if (!container) return;
+    
+    const entries = Object.entries(itemTypes);
+    if (entries.length === 0) {
+        container.innerHTML = '<div style="color:#6b7a8f; padding:8px; text-align:center;">Нет добавленных типов</div>';
+        return;
+    }
+    
+    let html = '';
+    for (const [prefix, name] of entries) {
+        html += `
+            <div class="type-item">
+                <span class="prefix">${prefix}</span>
+                <span class="name">→ ${name}</span>
+                <button class="btn btn-sm btn-danger remove-type" data-prefix="${prefix}">🗑</button>
+            </div>
+        `;
+    }
+    container.innerHTML = html;
+    
+    document.querySelectorAll('.remove-type').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const prefix = this.dataset.prefix;
+            // Проверяем, есть ли предметы с таким префиксом
+            const itemsWithPrefix = items.filter(i => i.id && i.id.startsWith(prefix));
+            if (itemsWithPrefix.length > 0) {
+                if (!confirm(`Удалить тип "${prefix}"? ${itemsWithPrefix.length} предмет(ов) с этим префиксом будут переименованы в "Предмет".`)) return;
+                // Переименовываем предметы
+                itemsWithPrefix.forEach(item => {
+                    const newName = 'Предмет ' + item.id;
+                    item.name = newName;
+                    item.type = 'Предмет';
+                });
+            }
+            delete itemTypes[prefix];
+            saveTypes();
+            renderTypes();
+            renderQuickButtons();
+            saveToFirebase();
+            showToast('✅ Тип удалён', `Префикс ${prefix} удалён`, 'success');
+        });
+    });
+}
+
+function renderQuickButtons() {
+    const container = document.getElementById('quickButtons');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    for (const [prefix, name] of Object.entries(itemTypes)) {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-sm btn-outline';
+        btn.dataset.quick = prefix + '-001';
+        btn.textContent = name;
+        btn.addEventListener('click', function() {
+            document.getElementById('scanInput').value = this.dataset.quick;
+            document.getElementById('scanAddBtn').click();
+        });
+        container.appendChild(btn);
+    }
+}
+
+// ============================================================
 // СТАТУС СИНХРОНИЗАЦИИ
 // ============================================================
 function updateSyncStatus(status) {
@@ -569,6 +738,7 @@ function updateSyncStatus(status) {
 // ЗАГРУЗКА ДАННЫХ ИЗ FIREBASE
 // ============================================================
 function loadData() {
+    loadTypes();
     updateSyncStatus('syncing');
     
     db.ref('settings').on('value', function(snapshot) {
@@ -1117,6 +1287,9 @@ function openProblemModal(itemId) {
     document.getElementById('problemModal').style.display = 'flex';
 }
 
+// ============================================================
+// ДОБАВЛЕНИЕ ПРЕДМЕТА (С ПОДДЕРЖКОЙ ТИПОВ)
+// ============================================================
 function addItemByCode(code, floor, cluster) {
     if (!code || code.trim() === '') {
         showToast('Ошибка', 'Введите код предмета', 'error');
@@ -1127,22 +1300,22 @@ function addItemByCode(code, floor, cluster) {
         showToast('Ошибка', `Предмет с ID ${code} уже существует`, 'error');
         return;
     }
+    
+    // Определяем тип по префиксу
     let type = 'Предмет';
-    const prefixes = {
-        'ST': 'Стол', 'CH': 'Стул', 'PC': 'Системный блок',
-        'MN': 'Монитор', 'KB': 'Клавиатура', 'MS': 'Мышь',
-        'EXT': 'Удлинитель'
-    };
-    for (const [prefix, name] of Object.entries(prefixes)) {
-        if (code.toUpperCase().startsWith(prefix)) {
+    let typeName = 'Предмет';
+    for (const [prefix, name] of Object.entries(itemTypes)) {
+        if (code.toUpperCase().startsWith(prefix.toUpperCase())) {
+            typeName = name;
             type = name;
             break;
         }
     }
+    
     const clusterName = settings.clusters.find(c => c.id === cluster)?.name || cluster;
     const newItem = {
         id: code,
-        name: type + ' ' + code,
+        name: typeName + ' ' + code,
         status: 'Исправен',
         type: type,
         floor: floor || '1',
@@ -1157,13 +1330,13 @@ function addItemByCode(code, floor, cluster) {
     history.push({
         id: Date.now() + '_' + Math.random().toString(36).substr(2, 6),
         itemId: code,
-        action: `Добавлен (${newItem.floor} этаж, ${clusterName})`,
+        action: `Добавлен (${newItem.floor} этаж, ${clusterName}) как "${type}"`,
         time: new Date().toLocaleString()
     });
     document.getElementById('scanInput').value = '';
     saveToFirebase();
     switchTab('list');
-    showToast('✅ Успешно!', `"${newItem.name}" добавлен`, 'success');
+    showToast('✅ Успешно!', `"${newItem.name}" добавлен как "${type}"`, 'success');
 }
 
 // ============================================================
@@ -1243,6 +1416,10 @@ function switchTab(tabId) {
     if (tabId === 'settings') {
         renderSettings();
         updateSelects();
+    }
+    if (tabId === 'types') {
+        renderTypes();
+        renderQuickButtons();
     }
     if (tabId === 'problems') {
         renderProblems();
@@ -1348,11 +1525,36 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('scanInput').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') document.getElementById('scanAddBtn').click();
     });
-    document.querySelectorAll('[data-quick]').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.getElementById('scanInput').value = this.dataset.quick;
-            document.getElementById('scanAddBtn').click();
-        });
+    
+    // Типы — кнопка добавления
+    document.getElementById('addTypeBtn').addEventListener('click', function() {
+        const prefix = document.getElementById('newTypePrefix').value.trim().toUpperCase();
+        const name = document.getElementById('newTypeName').value.trim();
+        
+        if (!prefix) {
+            showToast('Ошибка', 'Введите префикс', 'error');
+            return;
+        }
+        if (!name) {
+            showToast('Ошибка', 'Введите название типа', 'error');
+            return;
+        }
+        if (prefix.length < 2 || prefix.length > 6) {
+            showToast('Ошибка', 'Префикс должен содержать 2-6 символов', 'error');
+            return;
+        }
+        if (itemTypes[prefix]) {
+            showToast('Ошибка', `Префикс "${prefix}" уже существует`, 'error');
+            return;
+        }
+        
+        itemTypes[prefix] = name;
+        saveTypes();
+        renderTypes();
+        renderQuickButtons();
+        document.getElementById('newTypePrefix').value = '';
+        document.getElementById('newTypeName').value = '';
+        showToast('✅ Тип добавлен', `${prefix} → ${name}`, 'success');
     });
     
     // Настройки
@@ -1494,8 +1696,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     renderAll();
+    renderTypes();
+    renderQuickButtons();
     switchTab('dashboard');
-    console.log('✅ Приложение с Firebase запущено!');
+    console.log('✅ Приложение с управлением типами запущено!');
 });
 </script>
 </body>
