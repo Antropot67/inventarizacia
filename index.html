@@ -93,7 +93,6 @@
         .settings-group .item-row .flex { gap: 6px; }
         .settings-group .item-row input { margin: 0; padding: 8px 12px; font-size: 14px; flex: 1; min-width: 60px; }
         .settings-group .item-row .btn { padding: 8px 14px; font-size: 12px; }
-        @media (max-width: 480px) { #app { padding: 16px 12px; } .dashboard-grid { grid-template-columns: 1fr 1fr; } }
         .mt-2 { margin-top: 12px; }
         .scan-status { text-align: center; padding: 12px; color: #4f617c; font-size: 14px; }
         .scan-status .active { color: #28a745; font-weight: 600; }
@@ -346,7 +345,6 @@
         .dropdown-item:hover { background: #f0f4fe !important; }
         .dropdown-item .check { margin-left: auto; color: #28a745; font-weight: 700; }
 
-        /* ПАРОЛЬНЫЙ ЭКРАН */
         .password-overlay {
             position: fixed;
             top: 0;
@@ -406,6 +404,56 @@
             display: none;
         }
         .password-modal .error.show { display: block; }
+
+        /* ============================================================
+           АДАПТАЦИЯ ДЛЯ РАЗНЫХ ЭКРАНОВ
+           ============================================================ */
+
+        /* Телефоны (до 480px) */
+        @media (max-width: 480px) {
+            #app { max-width: 480px; padding: 16px 12px; }
+            .dashboard-grid { grid-template-columns: 1fr 1fr; }
+            .tabs { gap: 4px; }
+            .tab-btn { flex: 1 0 calc(50% - 4px); min-width: 80px; padding: 10px 0; font-size: 13px; }
+        }
+
+        /* Планшеты и маленькие ноутбуки (481px - 900px) */
+        @media (min-width: 481px) and (max-width: 900px) {
+            #app { max-width: 100%; padding: 20px 24px; }
+            .dashboard-grid { grid-template-columns: 1fr 1fr 1fr; }
+            .tabs { gap: 6px; }
+            .tab-btn { flex: 0 1 auto; min-width: 100px; padding: 12px 18px; font-size: 14px; }
+        }
+
+        /* Компьютеры (901px и более) */
+        @media (min-width: 901px) {
+            #app { max-width: 1200px; margin: 0 auto; padding: 30px 40px; border-radius: 32px; }
+            .dashboard-grid { grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+            .tabs { gap: 8px; padding: 8px; border-radius: 20px; flex-wrap: nowrap; }
+            .tab-btn { flex: 1; min-width: 120px; padding: 14px 20px; font-size: 15px; border-radius: 14px; }
+            .tab-btn .count { font-size: 12px; padding: 1px 10px; }
+            .item-row { padding: 18px 20px; margin-bottom: 14px; }
+            .card { padding: 20px 24px; }
+            .scan-emulate { padding: 16px 24px; }
+            .scan-emulate input { padding: 14px 20px; font-size: 16px; }
+            .modal { max-width: 500px; padding: 32px; }
+            .toast-container { max-width: 420px; }
+            .stat-card .num { font-size: 32px; }
+            .stat-card .label { font-size: 14px; }
+            .dropdown-menu { min-width: 200px; }
+            .dropdown-item { padding: 12px 20px; font-size: 15px; }
+        }
+
+        /* Очень большие экраны (1400px и более) */
+        @media (min-width: 1400px) {
+            #app { max-width: 1400px; padding: 40px 60px; }
+            .dashboard-grid { grid-template-columns: 1fr 1fr 1fr 1fr 1fr; }
+            .tabs { gap: 10px; }
+            .tab-btn { min-width: 150px; padding: 16px 28px; font-size: 16px; }
+            .item-row { padding: 22px 24px; }
+            .stat-card { padding: 24px; }
+            .stat-card .num { font-size: 36px; }
+        }
     </style>
 </head>
 <body>
@@ -650,12 +698,9 @@ let lockedTabs = ['list', 'problems', 'settings', 'types'];
 let unlockedTabs = [];
 
 function checkPassword(tabId) {
-    // Если вкладка не в списке защищённых — пропускаем
     if (!lockedTabs.includes(tabId)) return true;
-    // Если уже разблокирована — пропускаем
     if (unlockedTabs.includes(tabId)) return true;
     
-    // Показываем окно ввода пароля
     const overlay = document.getElementById('passwordOverlay');
     const input = document.getElementById('passwordInput');
     const error = document.getElementById('passwordError');
@@ -663,10 +708,7 @@ function checkPassword(tabId) {
     input.value = '';
     error.classList.remove('show');
     setTimeout(() => input.focus(), 100);
-    
-    // Запоминаем, для какой вкладки запрашиваем пароль
     overlay.dataset.targetTab = tabId;
-    
     return false;
 }
 
@@ -677,24 +719,20 @@ document.getElementById('passwordSubmitBtn').addEventListener('click', function(
     const targetTab = overlay.dataset.targetTab;
     
     if (input.value === APP_PASSWORD) {
-        // Пароль верный — разблокируем
         if (!unlockedTabs.includes(targetTab)) {
             unlockedTabs.push(targetTab);
         }
         overlay.style.display = 'none';
         error.classList.remove('show');
         
-        // Меняем иконку на кнопке
         document.querySelectorAll('.tab-btn').forEach(btn => {
             if (btn.dataset.tab === targetTab) {
                 btn.classList.remove('locked');
                 btn.classList.add('unlocked');
-                // Убираем 🔒 из текста
                 btn.textContent = btn.textContent.replace(' 🔒', '');
             }
         });
         
-        // Переключаемся на нужную вкладку (теперь она откроется)
         switchTab(targetTab);
         showToast('✅ Доступ открыт', 'Вкладка разблокирована', 'success', 2000);
     } else {
@@ -704,14 +742,12 @@ document.getElementById('passwordSubmitBtn').addEventListener('click', function(
     }
 });
 
-// Ввод пароля по Enter
 document.getElementById('passwordInput').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
         document.getElementById('passwordSubmitBtn').click();
     }
 });
 
-// Закрытие по Esc
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         document.getElementById('passwordOverlay').style.display = 'none';
@@ -1673,11 +1709,7 @@ function stopScanner() {
     }
 }
 
-// ============================================================
-// ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК С ПАРОЛЕМ
-// ============================================================
 function switchTab(tabId) {
-    // Проверяем пароль для защищённых вкладок
     if (lockedTabs.includes(tabId) && !unlockedTabs.includes(tabId)) {
         if (!checkPassword(tabId)) {
             return;
@@ -1694,7 +1726,6 @@ function switchTab(tabId) {
     const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
     if (targetBtn) targetBtn.classList.add('active');
     
-    // Обновляем содержимое
     if (tabId === 'settings') {
         renderSettings();
         updateSelects();
@@ -1717,9 +1748,6 @@ function renderAll() {
     renderProblems();
 }
 
-// ============================================================
-// ЗАПУСК ПРИЛОЖЕНИЯ
-// ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     loadData();
     
